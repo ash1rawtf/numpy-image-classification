@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from matplotlib import pyplot as plt
 from numpy.typing import NDArray
 
 TEST_SAMPLES_COUNT = 1000
@@ -63,7 +64,7 @@ def transform_Y(Y) -> NDArray[np.float128]:
     return transformed_Y.T
 
 
-def backward_prop(Z1, A1, Z2, A2, W2, X, Y) -> None:
+def backward_prop(Z1, A1, Z2, A2, W2, X, Y) -> tuple[NDArray[np.float128]]:
     m = Y.size
 
     dZ2 = A2 - transform_Y(Y)
@@ -77,7 +78,7 @@ def backward_prop(Z1, A1, Z2, A2, W2, X, Y) -> None:
     return dW1, db1, dW2, db2
 
 
-def update_params(W1, b1, W2, b2, dW1, db1, dW2, db2):
+def update_params(W1, b1, W2, b2, dW1, db1, dW2, db2) -> tuple[NDArray[np.float128]]:
     W1 -= LEARNING_RATE * dW1
     b1 -= LEARNING_RATE * db1
     W2 -= LEARNING_RATE * dW2
@@ -86,19 +87,51 @@ def update_params(W1, b1, W2, b2, dW1, db1, dW2, db2):
     return W1, b1, W2, b2
 
 
-def get_accuracy(A2, Y) -> None:
+def get_accuracy(A2, Y) -> np.float64:
     return np.sum(np.argmax(A2, 0) == Y) / Y.size
 
-def main() -> None:
-    X_train, Y_train, X_test, Y_test = get_data()
+
+def training(X, Y) -> tuple[NDArray[np.float128]]:
     W1, b1, W2, b2 = init_params()
 
     for epoch in range(EPOCHS):
-        Z1, A1, Z2, A2 = forward_prop(X_train, W1, b1, W2, b2)
-        dW1, db1, dW2, db2 = backward_prop(Z1, A1, Z2, A2, W2, X_train, Y_train)
+        Z1, A1, Z2, A2 = forward_prop(X, W1, b1, W2, b2)
+        dW1, db1, dW2, db2 = backward_prop(Z1, A1, Z2, A2, W2, X, Y)
         W1, b1, W2, b2 = update_params(W1, b1, W2, b2, dW1, db1, dW2, db2)
 
-        print(f"Epoch: {epoch} | Accuracy: {get_accuracy(A2, Y_train)}")
+        print(f"Epoch: {epoch} | Accuracy: {get_accuracy(A2, Y)}")
+
+    return W1, b1, W2, b2
+
+
+def testing(X, Y, W1, b1, W2, b2) -> None:
+    Z1, A1, Z2, A2 = forward_prop(X, W1, b1, W2, b2)
+    print(f"Testing result accuracy: {get_accuracy(A2, Y)}")
+
+
+def plot_prediction(index, X, Y, W1, b1, W2, b2) -> None:
+    selected_item = X[:, index, None]
+    Z1, A1, Z2, A2 = forward_prop(selected_item, W1, b1, W2, b2)
+    prediction = np.argmax(A2, 0)
+
+    print(f"Index: {index} | Prediction: {prediction} | Label: {Y[index]}")
+
+    plt.gray()
+    plt.imshow(selected_item.reshape((28, 28)) * 255, interpolation="nearest")
+    plt.show()
+
+
+def main() -> None:
+    X_train, Y_train, X_test, Y_test = get_data()
+
+    W1, b1, W2, b2 = training(X_train, Y_train)
+    testing(X_test, Y_test, W1, b1, W2, b2)
+
+    plot_prediction(0, X_test, Y_test, W1, b1, W2, b2)
+    plot_prediction(100, X_test, Y_test, W1, b1, W2, b2)
+    plot_prediction(666, X_test, Y_test, W1, b1, W2, b2)
+    plot_prediction(900, X_test, Y_test, W1, b1, W2, b2)
+    plot_prediction(999, X_test, Y_test, W1, b1, W2, b2)
 
 
 if __name__ == "__main__":
